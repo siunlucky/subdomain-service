@@ -7,7 +7,6 @@ exports.createUser = async (req, res) => {
     try {
         const { nama, username, password, isActive, token, status, role } = req.body;
         const newUser = new UserModel({
-            _id: new mongoose.Types.ObjectId(),
             nama,
             username,
             password,
