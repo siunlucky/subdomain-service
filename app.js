@@ -11,3 +11,7 @@ connectDB();
 
 // Middleware
 app.use(cors());
+
+// API list
+
+module.exports = app;
