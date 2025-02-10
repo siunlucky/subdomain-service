@@ -13,5 +13,7 @@ connectDB();
 app.use(cors());
 
 // API list
+app.use("/api/users", require("./routers/userRouters/user"));
+//http://localhost:3876/api/users/ 
 
 module.exports = app;
