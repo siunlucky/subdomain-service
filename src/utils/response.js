@@ -1,6 +1,5 @@
 import statusCodes from "../errors/status-codes.js";
 
-
 /**
  * Success response for successful operations
  * @param {any} data - The data to return in the response
@@ -32,6 +31,8 @@ export function createdResponse(res, data = "Resource created successfully", rec
         errors: null
     });
 }
+
+
   
 
   

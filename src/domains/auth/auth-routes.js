@@ -15,6 +15,9 @@ class AuthRoutes extends BaseRoutes {
             validateCredentials(loginSchema),
             tryCatch(AuthController.login)
         ]);
+        this.router.get("/verify/:token", [
+            tryCatch(AuthController.verify)
+        ]);
     }
 }
 

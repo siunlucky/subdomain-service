@@ -1,8 +1,7 @@
-const nodemailer = require("nodemailer");
-const dotenv = require("dotenv");
-dotenv.config();
+import nodemailer from "nodemailer";
 
-exports.sendEmail = async (to, subject, text, link = null) => {
+const sendEmail = async (to, subject, text, link = null) => {
+    console.log("SMTP credential", process.env.EMAIL_USERNAME, process.env.EMAIL_PASSWORD);
     try {
         const transporter = nodemailer.createTransport({
             service: "gmail",
@@ -36,3 +35,5 @@ exports.sendEmail = async (to, subject, text, link = null) => {
         throw new Error("Email could not be sent");
     }
 };
+
+export default sendEmail;
