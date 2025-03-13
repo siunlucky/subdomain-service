@@ -28,6 +28,10 @@ const UserSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
+    profile_uri: {
+        type: String,
+        default: null,
+    },
     verifiedAt: {
         type: Date,
         default: null,

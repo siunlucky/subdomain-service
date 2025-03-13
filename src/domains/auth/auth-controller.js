@@ -29,14 +29,36 @@ class AuthController {
     async verify(req, res) {
         const { token } = req.params;
 
-        const message = await AuthService.verify(token);
+        const response = await AuthService.verify(token);
 
-        if (!message) {
-            throw Error("Failed to verify");
+        if (response.status !== 200) {
+            return res.redirect(`${process.env.FE_URL}/login?verify=failed&message=${response.message}`);
         }
 
         return res.redirect(`${process.env.FE_URL}/login?verify=success`);
 
+    }
+
+    async getProfile(req, res){
+        const user = await AuthService.getProfile(req.app.locals.user.id);
+
+        if (!user) {
+            throw Error("Failed to get user profile");
+        }
+        
+        return successResponse(res, user);
+    }
+
+    async updateProfile(req, res){
+        const { name, email, phone_number } = req.body;
+
+        const user = await AuthService.updateProfile(req.app.locals.user.id, { name, email, phone_number });
+
+        if (!user) {
+            throw Error("Failed to update user profile");
+        }
+
+        return successResponse(res, user);
     }
 }
 

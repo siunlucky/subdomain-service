@@ -4,6 +4,7 @@ import { generateVerifEmail } from "../../utils/bodyEmail.js";
 import generateToken from "../../utils/generateToken.js";
 import sendEmail from "../../utils/sendEmail.js";
 import { parseJWT } from "../../utils/parseToken.js";
+import joi from "joi";
 
 class AuthService {
     async login(username, password) {
@@ -27,13 +28,14 @@ class AuthService {
             throw BaseError.badRequest("Invalid credentials");
         }
 
-        const token = await generateToken(user._id);
+        
 
         if (!user.verifiedAt){
+            const token = generateToken(user._id, "5m");
             const verificationLink = `${process.env.BE_URL}/api/v1/auth/verify/${token}`;
             const emailHtml = generateVerifEmail(verificationLink);
 
-            await sendEmail(
+            sendEmail(
                 user.email,
                 "Verifikasi Email dari Hiji: Omni Ads Channel",
                 "Terima kasih telah mendaftar di Hiji: Omni Ads Channel! Untuk melanjutkan, silakan verifikasi email Anda dengan mengklik tautan berikut:",
@@ -43,37 +45,59 @@ class AuthService {
             throw BaseError.badRequest("Email not verified, Please check your email to verify your account.");
         }
 
-        // const token = await generateToken(user._id);
+        const token = generateToken(user._id, "30d");
 
         return token;
     }
 
     async register(data) {
-        let user = await User.findOne({
+        const usernameExist = await User.findOne({
             username: data.username
         });
 
-        if (user) {
-            throw BaseError.badRequest("Username already exists");
-        }
-
-        user = await User.findOne({
+        const emailExist = await User.findOne({
             email: data.email
-        });
+        })
 
-        if (user) {
-            throw BaseError.badRequest("Email already exists");
-        }
-
-        user = await User.findOne({
+        const phoneExist = await User.findOne({
             phone_number: data.phone_number
         })
 
-        if (user) {
-            throw BaseError.badRequest("Phone Number already exists")
+        if (usernameExist || emailExist || phoneExist) {
+            let validation = "";
+            let stack = [];
+
+            if (usernameExist) {
+                validation = "Username already taken.";
+
+                stack.push({
+                    message: "Username already taken.",
+                    path: ["username"]
+                });
+            }
+
+            if (emailExist) {
+                validation += "Email already taken.";
+
+                stack.push({
+                    message: "Email already taken.",
+                    path: ["email"]
+                });
+            }
+
+            if (phoneExist) {
+                validation += "Phone number already taken.";
+
+                stack.push({
+                    message: "Phone number already taken.",
+                    path: ["phone_number"]
+                });
+            }
+
+            throw new joi.ValidationError(validation, stack);
         }
 
-        user = new User(data);
+        const user = new User(data);
         
         const createdUser = await user.save();
         
@@ -81,11 +105,11 @@ class AuthService {
             throw Error("Failed to register");
         }
 
-        const token = await generateToken(createdUser._id);
+        const token = generateToken(createdUser._id, "5m");
         const verificationLink = `${process.env.BE_URL}/api/v1/auth/verify/${token}`;
         const emailHtml = generateVerifEmail(verificationLink);
 
-        await sendEmail(
+        sendEmail(
             createdUser.email,
             "Verifikasi Email dari Hiji: Omni Ads Channel",
             "Terima kasih telah mendaftar di Hiji: Omni Ads Channel! Untuk melanjutkan, silakan verifikasi email Anda dengan mengklik tautan berikut:",
@@ -98,24 +122,56 @@ class AuthService {
     async verify(token) {
         const userId = parseJWT(token);
 
+        console.log(userId)
+
         if (!userId) {
-            throw BaseError.badRequest("Invalid token");
+            return { status: 400, message: "Invalid token" };
         }
 
         const user = await User.findById(userId.id);
 
-        if (user.verifiedAt){
-            return {status: 400}
+        if (!user) {
+            return { status: 400, message: "Not Found" }
         }
 
-        if (!user) {
-            return "User not found";
+        if (user.verifiedAt){
+            return { status: 400, message: "Email already verified" };
         }
 
         user.verifiedAt = Date.now();
         await user.save();
 
-        return { message: "Email verified successfully" };
+        return { status: 200, message: "Email verified successfully" };
+    }
+
+    async getProfile(id) {
+        const user = await User.findById(id, { password: 0 });
+
+        if (!user) {
+            throw BaseError.notFound("User not found");
+        }
+
+        return user;
+    }
+
+    async updateProfile(id, data) {
+        const user = await User.findById(id);
+
+        if (!user) {
+            throw BaseError.notFound("User not found");
+        }
+
+        const updatedUser = await User
+            .findByIdAndUpdate(
+                id,
+                data,
+                {
+                    new: true,
+                    runValidators: true
+                }
+            );
+
+        return updatedUser;
     }
 }
 

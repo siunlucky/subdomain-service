@@ -48,4 +48,12 @@ const registerSchema = Joi.object({
         }),
     })
 
-export { loginSchema, registerSchema };
+const profileSchema = Joi.object({
+    name : Joi.string().required().min(4)
+        .messages({
+            "string.empty": "Name is required.",
+            "string.min": "Name must be at least 4 characters long."
+        }),
+}) 
+
+export { loginSchema, registerSchema, profileSchema };

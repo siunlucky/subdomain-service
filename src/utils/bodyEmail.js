@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-const logo = `../../public/assets/images/logo.png`
 
 function generateEmailIndoTemplate(verificationUrl) {
     return `
@@ -46,7 +45,7 @@ function generateEmailIndoTemplate(verificationUrl) {
           </head>
           <body>
               <div class="container">
-                  <img src="${logo}" class="logo" alt="Logo">
+                  <img src="${process.env.BE_URL}/assets/images/logo.png" class="logo" alt="Logo">
                   <h2>Verifikasi Akun Anda</h2>
                   <p>Silakan klik tombol di bawah ini untuk memverifikasi email Anda dan mulai menggunakan layanan kami.</p>
                   <a href="${verificationUrl}" class="btn">Verifikasi Sekarang</a>
@@ -156,10 +155,11 @@ function generateVerifEmail(verificationUrl) {
           </head>
           <body>
               <div class="container">
-                  <img src="${logo}" class="logo" alt="Logo">
+                  <img src="/public/assets/images/logo.png" class="logo" alt="Logo">
                   <h2>Email Verification</h2>
                   <p>We are excited to have you on board! Please verify your email to activate your account.</p>
                   <a href="${verificationUrl}" class="btn">Verify Email</a>
+                  <p>This link will expired on 5 minute</p>
                   <p>If you didn’t request this, you can safely ignore this email.</p>
               </div>
           </body>
