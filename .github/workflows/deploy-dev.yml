@@ -46,6 +46,10 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
+          export NVM_DIR="/home/kanzen/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm use 20
+
           cd /home/kanzen/subdomain-service
           git reset --hard HEAD
           git pull origin main --rebase
