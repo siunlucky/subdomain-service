@@ -32,6 +32,7 @@
     "@joi/date": "^2.1.1",
     "@types/express": "^5.0.0",
     "apicache": "^1.6.3",
+    "axios": "^1.8.4",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",

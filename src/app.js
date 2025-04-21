@@ -13,9 +13,8 @@ import morgan from "morgan";
 import multer from "multer";
 import path from "path";
 
-import connectDB from "./config/db.js";
-
-import AuthRoutes from "./domains/auth/auth-routes.js";
+// import connectDB from "./config/db.js";
+import router from "./routes.js";
 
 class ExpressApplication {
     app;
@@ -85,7 +84,8 @@ class ExpressApplication {
         // Set Route here
         // this.app.use("/api/v1/menu", menuRoutes);
 
-        this.app.use("/api/v1/auth", AuthRoutes);
+        this.app.use("/api", router);
+        // this.app.use("/api/v2/auth", AuthRoutesV2);
     }
 
     configureAssets() {
@@ -102,7 +102,7 @@ class ExpressApplication {
 
     async start() {
         try {
-            await connectDB();
+            // await connectDB();
             this.app.listen(this.port, () => {
                 logger.info(`🚀 Server running on port ${this.port}`);
             });
