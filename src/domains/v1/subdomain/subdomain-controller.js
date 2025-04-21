@@ -1,4 +1,9 @@
 import axios from "axios";
+import client from "../../../config/cloudflare.js";
+import BaseError from "../../../base_classes/base-error.js";
+import { successResponse } from "../../../utils/response.js";
+import { symlink, writeFile } from "fs";
+import { exec } from "child_process";
 
 class SubdomainController {
     async index() {
@@ -11,101 +16,64 @@ class SubdomainController {
 
     async create(req, res) {
         const { user_id, bussiness_id, name } = req.body;
-        
+
         const fullDomain = `${name}.${process.env.DOMAIN}`
 
-        try {
-            const dnsRecord = {
-                type: "A",
-                name: fullDomain,
-                content: process.env.SERVER_IP,
-                ttl: 3600,
-                proxied: false,
-            }
-
-            await axios.post(
-                `https://api.cloudflare.com/client/v4/zones/${process.env.CLOUDFLARE_ZONE_ID}/dns_records`,
-                dnsRecord,
-                {
-                    headers: {
-                        Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            ).then(
-                (response) => {
-                    if (response.status !== 200) {
-                        return res.status(500).json({
-                            message: "Error creating DNS record",
-                            error: response.data,
-                        });
-                    }
-                }
-            ).catch((error) => {
-                console.error(error);
-                return res.status(500).json({
-                    message: "Error creating DNS record",
-                    error: error.message,
-                });
-            }
-            )
-
-            const nginxConfig =
-                `server {
-                    listen 80;
-                    server_name ${fullDomain};
-                    root ${process.env.PREFIX}/${user_id}/${bussiness_id};
-                    location / {
-                        return 404;
-                    }
-                }`
-            const nginxFilePath = `/etc/nginx/sites-available/${fullDomain}`
-            fs.writeFile(nginxFilePath, nginxConfig, (err) => {
-                if (err) {
-                    console.error(err);
-                    return res.status(500).json({
-                        message: "Internal Server Error",
-                        error: err.message,
-                    });
-                }
-            }
-            )
-            fs.symlink(nginxFilePath, `/etc/nginx/sites-enabled/${fullDomain}`, (err) => {
-                if (err) {
-                    console.error(err);
-                    return res.status(500).json({
-                        message: "Internal Server Error",
-                        error: err.message,
-                    });
-                }
-            })
-            exec("nginx -s reload", (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`exec error: ${error}`);
-                    return res.status(500).json({
-                        message: "Internal Server Error",
-                        error: error.message,
-                    });
-                }
-                console.log(`stdout: ${stdout}`);
-                console.log(`stderr: ${stderr}`);
-            });
-
-            return res.status(200).json({
-                message: "Subdomain created successfully",
-                data: {
-                    subdomain: fullDomain,
-                    config: nginxConfig,
-                },
-            });
-
-        } catch (error) {
-            console.error(error);
-            return res.status(500).json({
-                message: "Internal Server Error",
-                error: error.message,
-            });
+        const dnsRecord = {
+            type: "A",
+            name: fullDomain,
+            content: process.env.IP,
+            ttl: 3600,
+            proxied: true,
         }
+   
+        const response = await client.dns.records.create({
+            zone_id: process.env.CLOUDFLARE_ZONE_ID,
+            ...dnsRecord,
+        }).catch((error) => {
+            console.log(error);
+            throw BaseError.badRequest(error.errors[0].message);
+        })
+
+        const nginxConfig =
+            `server {
+                listen 80;
+                server_name ${fullDomain};
+                root ${process.env.PREFIX}/${user_id}/${bussiness_id};
+                location / {
+                    return 404;
+                }
+            }`
+        const nginxFilePath = `/etc/nginx/sites-available/${fullDomain}`
+
+        writeFile(nginxFilePath, nginxConfig, (err) => {
+            if (err) {
+                console.error(err);                
+            }
+        })
+
+        symlink(nginxFilePath, `/etc/nginx/sites-enabled/${fullDomain}`, (err) => {
+            if (err) {
+                console.error(err);
+            }
+        })
+
+        exec("nginx -s reload", (error, stdout, stderr) => {
+            if (error) {
+                console.error(`exec error: ${error}`);
+            }
+            console.log(`stdout: ${stdout}`);
+            console.log(`stderr: ${stderr}`);
+        });
+        
+        return successResponse(res, {
+            message: "Subdomain created successfully",
+            data: {
+                dnsRecord: response,
+                nginxConfig: nginxFilePath,
+                
+            }
+        })
     }
 
     async update() {
