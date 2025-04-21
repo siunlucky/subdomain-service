@@ -44,7 +44,7 @@ class SubdomainController {
                     return 404;
                 }
             }`
-        const nginxFilePath = `/etc/nginx/sites-available/${fullDomain}`
+        const nginxFilePath = `/home/kanzen/HijiData/nginx/sites-available/${fullDomain}`
 
         writeFile(nginxFilePath, nginxConfig, (err) => {
             if (err) {
@@ -52,13 +52,13 @@ class SubdomainController {
             }
         })
 
-        symlink(nginxFilePath, `/etc/nginx/sites-enabled/${fullDomain}`, (err) => {
+        symlink(nginxFilePath, `/home/kanzen/HijiData/nginx/sites-enabled/${fullDomain}`, (err) => {
             if (err) {
                 console.error(err);
             }
         })
 
-        exec("nginx -s reload", (error, stdout, stderr) => {
+        exec("sudo systemctl reload nginx", (error, stdout, stderr) => {
             if (error) {
                 console.error(`exec error: ${error}`);
             }
@@ -71,7 +71,7 @@ class SubdomainController {
             data: {
                 dnsRecord: response,
                 nginxConfig: nginxFilePath,
-                
+
             }
         })
     }
