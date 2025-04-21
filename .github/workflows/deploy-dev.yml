@@ -44,6 +44,7 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        passphrase: Prj977je94.
         script: |
           cd /home/kanzen/subdomain-service
           git reset --hard HEAD
