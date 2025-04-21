@@ -10,12 +10,12 @@ class SubdomainController {
     async create(req, res) {
         const { user_id, bussiness_id, name, config } = req.body;
         
-        const fullDdomain = `${name}.${process.env.DOMAIN}`
+        const fullDomain = `${name}.${process.env.DOMAIN}`
 
         try {
             const dnsRecord = {
                 type: "A",
-                name: fullDdomain,
+                name: fullDomain,
                 content: process.env.SERVER_IP,
                 ttl: 3600,
                 proxied: false,
@@ -35,13 +35,13 @@ class SubdomainController {
             const nginxConfig =
                 `server {
                     listen 80;
-                    server_name ${fullDdomain};
+                    server_name ${fullDomain};
                     root ${config}/${user_id}/${bussiness_id};
                     location / {
                         return 404;
                     }
                 }`
-            const nginxFilePath = `/etc/nginx/sites-available/${fullDdomain}`
+            const nginxFilePath = `/etc/nginx/sites-available/${fullDomain}`
             fs.writeFile(nginxFilePath, nginxConfig, (err) => {
                 if (err) {
                     console.error(err);
@@ -52,7 +52,7 @@ class SubdomainController {
                 }
             }
             )
-            fs.symlink(nginxFilePath, `/etc/nginx/sites-enabled/${fullDdomain}`, (err) => {
+            fs.symlink(nginxFilePath, `/etc/nginx/sites-enabled/${fullDomain}`, (err) => {
                 if (err) {
                     console.error(err);
                     return res.status(500).json({
@@ -76,7 +76,7 @@ class SubdomainController {
             return res.status(200).json({
                 message: "Subdomain created successfully",
                 data: {
-                    subdomain: fullDdomain,
+                    subdomain: fullDomain,
                     config: nginxConfig,
                 },
             });
