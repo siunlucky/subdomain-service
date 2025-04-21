@@ -23,6 +23,7 @@ jobs:
         echo PREFIX=${{ secrets.PREFIX }} >> .env
         echo CLOUDFLARE_API_TOKEN=${{ secrets.CLOUDFLARE_API_TOKEN }} >> .env
         echo CLOUDFLARE_ZONE_ID=${{ secrets.CLOUDFLARE_ZONE_ID }} >> .env
+        echo CLOUDFLARE_EMAIL=${{ secrets.CLOUDFLARE_EMAIL }} >> .env
         echo JWT_SECRET=${{ secrets.JWT_SECRET }} >> .env
         echo DOMAIN=${{ secrets.DOMAIN }} >> .env
         echo IP=${{ secrets.IP }} >> .env

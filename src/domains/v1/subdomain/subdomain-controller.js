@@ -6,11 +6,11 @@ class SubdomainController {
     }
 
     async show() {
-        const { subdomain } = req.params;
+        throw new Error("Method not implemented");
     }
 
     async create(req, res) {
-        const { user_id, bussiness_id, name, config } = req.body;
+        const { user_id, bussiness_id, name } = req.body;
         
         const fullDomain = `${name}.${process.env.DOMAIN}`
 
@@ -32,13 +32,29 @@ class SubdomainController {
                         "Content-Type": "application/json",
                     },
                 }
+            ).then(
+                (response) => {
+                    if (response.status !== 200) {
+                        return res.status(500).json({
+                            message: "Error creating DNS record",
+                            error: response.data,
+                        });
+                    }
+                }
+            ).catch((error) => {
+                console.error(error);
+                return res.status(500).json({
+                    message: "Error creating DNS record",
+                    error: error.message,
+                });
+            }
             )
 
             const nginxConfig =
                 `server {
                     listen 80;
                     server_name ${fullDomain};
-                    root ${config}/${user_id}/${bussiness_id};
+                    root ${process.env.PREFIX}/${user_id}/${bussiness_id};
                     location / {
                         return 404;
                     }
