@@ -85,6 +85,9 @@ class ExpressApplication {
         // this.app.use("/api/v1/menu", menuRoutes);
 
         this.app.use("/api", router);
+        this.app.get("/test", (req, res) => {
+            res.status(200).json({ message: "Hello World" });
+        });
         // this.app.use("/api/v2/auth", AuthRoutesV2);
     }
 

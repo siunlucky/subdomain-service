@@ -5,7 +5,7 @@ const router = express.Router();
 
 const RoutesV1 = [
   {
-    path: '/subdomain',
+    path: 'subdomain',
     route: subdomainRoutes.v1,
   }
 ];

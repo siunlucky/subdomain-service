@@ -1,3 +1,5 @@
+import axios from "axios";
+
 class SubdomainController {
     async index() {
         throw new Error("Method not implemented");
