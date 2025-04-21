@@ -56,4 +56,4 @@ jobs:
           git pull origin main --rebase
           npm install
           npm run build          
-          pm2 restart subdomain-service:3000
+          pm2 restart subdomain-service
