@@ -213,14 +213,14 @@ class SubdomainController {
             writeFile(nginxFilePath, updatedConfig, 'utf8', (writeErr) => {
                 if (writeErr) {
                     console.error("Gagal menulis ulang konfigurasi:", writeErr);
-                    throw BaseError.internal("Gagal memperbarui konfigurasi");
+                    throw Error("Gagal memperbarui konfigurasi");
                 }
 
                 // Reload nginx
                 exec("sudo systemctl reload nginx", (error, stdout, stderr) => {
                     if (error) {
                         console.error("Gagal reload nginx:", error);
-                        throw BaseError.internal("Reload nginx gagal");
+                        throw Error("Gagal reload nginx");
                     }
 
                     return successResponse(res, {
