@@ -134,42 +134,47 @@ class SubdomainController {
         const { name, user_id, bussiness_id, slug, page_id } = req.body;
 
         const fullDomain = `${name}.${process.env.DOMAIN}`;
-        const nginxFilePath = `${process.env.CONFIG_PREFIX}/sites-available/${fullDomain}.conf`
-
-        console.log(nginxFilePath);
+        const nginxFilePath = path.join(process.env.CONFIG_PREFIX, "sites-available", `${fullDomain}.conf`);
 
         const slugLocationBlock = `
-    location /${slug} {
-        index index.html;
-        alias ${process.env.PREFIX}/${user_id}/${bussiness_id}/${page_id}/;
-    }`;
+        location /${slug} {
+            index index.html;
+            alias ${process.env.PREFIX}/${user_id}/${bussiness_id}/${page_id}/;
+        }`;
 
-        // Cek apakah slug sudah ada di file config
-        readFile(nginxFilePath, 'utf8', (readErr, data) => {
+        readFile(nginxFilePath, "utf8", (readErr, data) => {
             if (readErr) {
                 console.error("Gagal membaca file config:", readErr);
-                throw BaseError.badRequest("Konfigurasi domain tidak ditemukan");
+                return res.status(400).json({ message: "Konfigurasi domain tidak ditemukan" });
             }
 
             if (data.includes(`location /${slug}`)) {
-                throw BaseError.badRequest("Slug sudah digunakan dalam domain ini");
+                return res.status(400).json({ message: "Slug sudah digunakan dalam domain ini" });
             }
 
-            // Tambahkan location slug ke config
-            appendFile(nginxFilePath, slugLocationBlock, (appendErr) => {
-                if (appendErr) {
-                    console.error("Gagal menambahkan slug:", appendErr);
-                    throw BaseError.internal("Gagal menambahkan konfigurasi slug");
+            // Cari posisi penutup terakhir "}" dari server block
+            const lastBracketIndex = data.lastIndexOf("}");
+
+            if (lastBracketIndex === -1) {
+                return res.status(500).json({ message: "Format konfigurasi nginx tidak valid" });
+            }
+
+            // Sisipkan slug block sebelum penutup server block
+            const updatedData = data.slice(0, lastBracketIndex) + slugLocationBlock + "\n}" + data.slice(lastBracketIndex + 1);
+
+            writeFile(nginxFilePath, updatedData, "utf8", (writeErr) => {
+                if (writeErr) {
+                    console.error("Gagal menulis ulang konfigurasi:", writeErr);
+                    return res.status(500).json({ message: "Gagal menyimpan konfigurasi slug" });
                 }
 
-                // Reload nginx
                 exec("sudo systemctl reload nginx", (error, stdout, stderr) => {
                     if (error) {
                         console.error("Gagal reload nginx:", error);
-                        throw BaseError.internal("Reload nginx gagal");
+                        return res.status(500).json({ message: "Reload nginx gagal" });
                     }
 
-                    return successResponse(res, {
+                    return res.status(200).json({
                         message: "Slug berhasil ditambahkan ke subdomain",
                         slug,
                         domain: fullDomain,
@@ -179,6 +184,7 @@ class SubdomainController {
             });
         });
     }
+
 
     async deleteSlug(req, res) {
         const { name, slug } = req.body;
