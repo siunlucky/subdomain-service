@@ -84,11 +84,11 @@ class SubdomainController {
     }
 
     async delete(req, res) {
-        const { dns_id } = req.body;
+        const { name, dns_id } = req.body;
 
         console.log(dns_id);
 
-        // const fullDomain = `${name}.${process.env.DOMAIN}`
+        const fullDomain = `${name}.${process.env.DOMAIN}`
 
         const response = await client.dns.records.delete(dns_id, {
             zone_id: process.env.CLOUDFLARE_ZONE_ID
