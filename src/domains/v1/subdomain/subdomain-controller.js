@@ -134,7 +134,7 @@ class SubdomainController {
         const { name, user_id, bussiness_id, slug, page_id } = req.body;
 
         const fullDomain = `${name}.${process.env.DOMAIN}`;
-        const nginxFilePath = path.join(process.env.CONFIG_PREFIX, "sites-available", `${fullDomain}.conf`);
+        const nginxFilePath = `${process.env.CONFIG_PREFIX}/sites-available/${fullDomain}.conf`;
 
         const slugLocationBlock = `
         location /${slug} {
