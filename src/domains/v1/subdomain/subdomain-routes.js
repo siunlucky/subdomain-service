@@ -10,7 +10,7 @@ class SubdomainRoutes extends BaseRoutes {
         this.router.get("/:id", [tryCatch(SubdomainController.show)]);
         this.router.post("/", [tryCatch(SubdomainController.create)]);
         this.router.put("/:id", [tryCatch(SubdomainController.update)]);
-        this.router.delete("/:id", [tryCatch(SubdomainController.delete)]);
+        this.router.delete("/", [tryCatch(SubdomainController.delete)]);
     }
 }
 
