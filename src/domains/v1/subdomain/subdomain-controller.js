@@ -152,14 +152,12 @@ class SubdomainController {
                 return res.status(400).json({ message: "Slug sudah digunakan dalam domain ini" });
             }
 
-            // Cari posisi penutup terakhir "}" dari server block
             const lastBracketIndex = data.lastIndexOf("}");
 
             if (lastBracketIndex === -1) {
                 return res.status(500).json({ message: "Format konfigurasi nginx tidak valid" });
             }
 
-            // Sisipkan slug block sebelum penutup server block
             const updatedData = data.slice(0, lastBracketIndex) + slugLocationBlock + "\n}" + data.slice(lastBracketIndex + 1);
 
             writeFile(nginxFilePath, updatedData, "utf8", (writeErr) => {
@@ -192,31 +190,26 @@ class SubdomainController {
         const fullDomain = `${name}.${process.env.DOMAIN}`;
         const nginxFilePath = `${process.env.CONFIG_PREFIX}/sites-available/${fullDomain}.conf`
 
-        // Baca isi file nginx
         readFile(nginxFilePath, 'utf8', (readErr, data) => {
             if (readErr) {
                 console.error("Gagal membaca file config:", readErr);
                 throw BaseError.badRequest("Konfigurasi domain tidak ditemukan");
             }
 
-            // Regex untuk mencari blok location slug (baris indentasi bisa bervariasi)
             const slugBlockRegex = new RegExp(`\\n\\s*location\\s+\\/${slug}\\s*\\{[\\s\\S]*?\\}`, 'g');
 
             if (!slugBlockRegex.test(data)) {
                 throw BaseError.badRequest("Slug tidak ditemukan dalam konfigurasi");
             }
 
-            // Hapus blok slug
             const updatedConfig = data.replace(slugBlockRegex, '');
 
-            // Tulis ulang file config tanpa blok slug
             writeFile(nginxFilePath, updatedConfig, 'utf8', (writeErr) => {
                 if (writeErr) {
                     console.error("Gagal menulis ulang konfigurasi:", writeErr);
                     throw Error("Gagal memperbarui konfigurasi");
                 }
 
-                // Reload nginx
                 exec("sudo systemctl reload nginx", (error, stdout, stderr) => {
                     if (error) {
                         console.error("Gagal reload nginx:", error);
