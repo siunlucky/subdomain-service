@@ -44,7 +44,7 @@ class SubdomainController {
                     return 404;
                 }
             }`
-        const nginxFilePath = `/home/kanzen/HijiData/nginx/sites-available/${fullDomain}.conf`
+        const nginxFilePath = `${process.env.CONFIG_PREFIX}/sites-available/${fullDomain}.conf`
 
         writeFile(nginxFilePath, nginxConfig, (err) => {
             if (err) {
@@ -52,7 +52,7 @@ class SubdomainController {
             }
         })
 
-        symlink(nginxFilePath, `/home/kanzen/HijiData/nginx/sites-enabled/${fullDomain}.conf`, (err) => {
+        symlink(nginxFilePath, `${process.env.CONFIG_PREFIX}/sites-enabled/${fullDomain}.conf`, (err) => {
             if (err) {
                 console.error(err);
             }
@@ -80,8 +80,54 @@ class SubdomainController {
         throw new Error("Method not implemented");
     }
 
-    async delete() {
-        throw new Error("Method not implemented");
+    async delete(req, res) {
+        const { user_id, bussiness_id, name } = req.body;
+
+        const fullDomain = `${name}.${process.env.DOMAIN}`
+        const dnsRecord = {
+            type: "A",
+            name: fullDomain,
+        }
+
+        const response = await client.dns.records.delete({
+            zone_id: process.env.CLOUDFLARE_ZONE_ID,
+            ...dnsRecord,
+        }).catch((error) => {
+            console.log(error);
+            throw BaseError.badRequest(error.errors[0].message);
+        })
+
+        const nginxFilePath = `${process.env.CONFIG_PREFIX}/sites-available/${fullDomain}.conf`
+        exec(`rm ${nginxFilePath}`, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`exec error: ${error}`);
+            }
+            console.log(`stdout: ${stdout}`);
+            console.log(`stderr: ${stderr}`);
+        })
+
+        exec(`rm ${process.env.CONFIG_PREFIX}/sites-enabled/${fullDomain}.conf`, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`exec error: ${error}`);
+            }
+            console.log(`stdout: ${stdout}`);
+            console.log(`stderr: ${stderr}`);
+        })
+
+        exec("sudo systemctl reload nginx", (error, stdout, stderr) => {
+            if (error) {
+                console.error(`exec error: ${error}`);
+            }
+            console.log(`stdout: ${stdout}`);
+            console.log(`stderr: ${stderr}`);
+        });
+
+        return successResponse(res, {
+            message: "Subdomain deleted successfully",
+            data: {
+                dnsRecord: response,
+            }
+        });
     }
 }
 
