@@ -27,6 +27,7 @@ jobs:
         echo JWT_SECRET=${{ secrets.JWT_SECRET }} >> .env
         echo DOMAIN=${{ secrets.DOMAIN }} >> .env
         echo IP=${{ secrets.IP }} >> .env
+        echo CONFIG_PREFIX=${{ secrets.CONFIG_PREFIX }} >> .env
     - name: Install dependencies
       run: npm install
     - name: Build project
