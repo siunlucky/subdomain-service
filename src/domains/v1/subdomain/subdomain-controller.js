@@ -2,7 +2,7 @@ import axios from "axios";
 import client from "../../../config/cloudflare.js";
 import BaseError from "../../../base_classes/base-error.js";
 import { successResponse } from "../../../utils/response.js";
-import { symlink, writeFile } from "fs";
+import { appendFile, readFile, symlink, writeFile } from "fs";
 import { exec } from "child_process";
 
 class SubdomainController {
@@ -74,7 +74,7 @@ class SubdomainController {
             data: {
                 dnsRecordId: response.id,
                 dnsName: response.name,
-                // nginxConfig: nginxFilePath,
+                nginxConfig: nginxFilePath,
             }
         })
     }
@@ -96,7 +96,6 @@ class SubdomainController {
             console.log(error);
             throw BaseError.badRequest(error.errors[0].message);
         })
-
 
         const nginxFilePath = `${process.env.CONFIG_PREFIX}/sites-available/${fullDomain}.conf`
         exec(`rm ${nginxFilePath}`, (error, stdout, stderr) => {
@@ -128,6 +127,103 @@ class SubdomainController {
             data: {
                 dnsRecord: response,
             }
+        });
+    }
+
+    async addSlug(req, res) {
+        const { name, user_id, bussiness_id, slug, page_id } = req.body;
+
+        const fullDomain = `${name}.${process.env.DOMAIN}`;
+        const nginxFilePath = `${process.env.CONFIG_PREFIX}/sites-available/${fullDomain}.conf`
+
+        console.log(nginxFilePath);
+
+        const slugLocationBlock = `
+    location /${slug} {
+        index index.html;
+        alias ${process.env.PREFIX}/${user_id}/${bussiness_id}/${page_id}/;
+    }`;
+
+        // Cek apakah slug sudah ada di file config
+        readFile(nginxFilePath, 'utf8', (readErr, data) => {
+            if (readErr) {
+                console.error("Gagal membaca file config:", readErr);
+                throw BaseError.badRequest("Konfigurasi domain tidak ditemukan");
+            }
+
+            if (data.includes(`location /${slug}`)) {
+                throw BaseError.badRequest("Slug sudah digunakan dalam domain ini");
+            }
+
+            // Tambahkan location slug ke config
+            appendFile(nginxFilePath, slugLocationBlock, (appendErr) => {
+                if (appendErr) {
+                    console.error("Gagal menambahkan slug:", appendErr);
+                    throw BaseError.internal("Gagal menambahkan konfigurasi slug");
+                }
+
+                // Reload nginx
+                exec("sudo systemctl reload nginx", (error, stdout, stderr) => {
+                    if (error) {
+                        console.error("Gagal reload nginx:", error);
+                        throw BaseError.internal("Reload nginx gagal");
+                    }
+
+                    return successResponse(res, {
+                        message: "Slug berhasil ditambahkan ke subdomain",
+                        slug,
+                        domain: fullDomain,
+                        page_path: `${process.env.PREFIX}/${user_id}/${bussiness_id}/${page_id}/`
+                    });
+                });
+            });
+        });
+    }
+
+    async deleteSlug(req, res) {
+        const { name, slug } = req.body;
+
+        const fullDomain = `${name}.${process.env.DOMAIN}`;
+        const nginxFilePath = `${process.env.CONFIG_PREFIX}/sites-available/${fullDomain}.conf`
+
+        // Baca isi file nginx
+        readFile(nginxFilePath, 'utf8', (readErr, data) => {
+            if (readErr) {
+                console.error("Gagal membaca file config:", readErr);
+                throw BaseError.badRequest("Konfigurasi domain tidak ditemukan");
+            }
+
+            // Regex untuk mencari blok location slug (baris indentasi bisa bervariasi)
+            const slugBlockRegex = new RegExp(`\\n\\s*location\\s+\\/${slug}\\s*\\{[\\s\\S]*?\\}`, 'g');
+
+            if (!slugBlockRegex.test(data)) {
+                throw BaseError.badRequest("Slug tidak ditemukan dalam konfigurasi");
+            }
+
+            // Hapus blok slug
+            const updatedConfig = data.replace(slugBlockRegex, '');
+
+            // Tulis ulang file config tanpa blok slug
+            writeFile(nginxFilePath, updatedConfig, 'utf8', (writeErr) => {
+                if (writeErr) {
+                    console.error("Gagal menulis ulang konfigurasi:", writeErr);
+                    throw BaseError.internal("Gagal memperbarui konfigurasi");
+                }
+
+                // Reload nginx
+                exec("sudo systemctl reload nginx", (error, stdout, stderr) => {
+                    if (error) {
+                        console.error("Gagal reload nginx:", error);
+                        throw BaseError.internal("Reload nginx gagal");
+                    }
+
+                    return successResponse(res, {
+                        message: "Slug berhasil dihapus dari subdomain",
+                        slug,
+                        domain: fullDomain
+                    });
+                });
+            });
         });
     }
 }

@@ -6,11 +6,11 @@ import tryCatch from "../../../utils/tryCatcher.js";
 
 class SubdomainRoutes extends BaseRoutes {
     routes() {
-        this.router.get("/", [tryCatch(SubdomainController.index)]);
-        this.router.get("/:id", [tryCatch(SubdomainController.show)]);
         this.router.post("/", [tryCatch(SubdomainController.create)]);
-        this.router.put("/:id", [tryCatch(SubdomainController.update)]);
         this.router.delete("/", [tryCatch(SubdomainController.delete)]);
+
+        this.router.post("/slug", [tryCatch(SubdomainController.addSlug)]);
+        this.router.delete("/slug", [tryCatch(SubdomainController.deleteSlug)]);
     }
 }
 
